@@ -1,0 +1,35 @@
+﻿@if (Active)
+{
+	<div style="border: 5px; border-color: white;">
+		@foreach (var log in _logs)
+		{
+			<label>@log</label>
+			<br />
+		}
+	</div>
+}
+else
+{
+	<div>
+		<label>
+			Done
+		</label>
+	</div>
+}
+
+@code {
+	private List<string> _logs = new();
+
+	public bool Active { get; set; } = true;
+
+	public async Task AddLog(string log)
+	{
+		_logs.Add(log);
+		await InvokeAsync(StateHasChanged);
+	}
+	public async Task UpdateLastLog(string log)
+	{
+		if(_logs.Any()) _logs[^1] = log;
+		await InvokeAsync(StateHasChanged);
+	}
+}

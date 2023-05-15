@@ -1,0 +1,17 @@
+﻿<div class="youtube-video">
+    <div class="video-details">
+        <h1>@Quote</h1>
+    </div>
+    <iframe class ="video" width="560" height="315" src="@VideoUrl" frameborder="0"></iframe>
+    
+</div>
+
+@code {
+    [Parameter]
+    public string? VideoUrl { get; set; }
+
+    [Parameter]
+    public string? Quote { get; set; }
+
+}
+

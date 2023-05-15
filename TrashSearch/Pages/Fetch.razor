@@ -1,0 +1,84 @@
+﻿@page "/fetch"
+
+@using TrashSearch.Services
+@using TrashSearch.Data
+@using Newtonsoft.Json;
+@using TrashSearch.Components;
+@using System.Text.Json.Serialization;
+@inject AudioDownloaderService DownloaderService
+<div style=" background-color: var(--background); padding: 100px 100px 100px 100px; margin: 0; width: 100%">
+	<div style="display: flex; justify-content: center; flex-wrap:wrap; margin: 50px;">
+		<h1 class="centered_header">SEARCH FOR TRASHTASTE QUOTES</h1><br />
+		<input class="large_input" type="text" @bind="@searchPhrase" @onkeypress="@((ev) => {if (ev.Code=="Enter") Search();})">
+	</div>
+	@if (_isSearching)
+	{
+		<LoadingCircle></LoadingCircle>
+	}
+</div>
+
+
+<div class="quotes-container">
+	@foreach (var quote in quotes)
+	{
+		<div class="grid-item">
+			<YTVideo VideoUrl="@quote.Value" Quote="@quote.Key" />
+		</div>
+	}
+</div>
+
+
+@code {
+	private List<KeyValuePair<string, string>> quotes = new();
+
+	private string searchPhrase = "";
+
+	private bool _isSearching =  false;
+
+	private DatabaseService database = new DatabaseService();
+
+	private string mainCollectionName => "TrashTaste_3";
+	private string metadataCollectionName => "TrashTasteMetaData_3";
+
+	private async Task SetStatus(bool status)
+	{
+		_isSearching = status;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task<EpisodeCollection> GetEpisodeCollection(QuoteMetadata meta)
+	{
+		var collectionMetaJson = (await database.SearchById(metadataCollectionName, meta.EpisodeNumber.ToString()))!.Metadata.Description;
+		var collection = JsonConvert.DeserializeObject<EpisodeCollection>(collectionMetaJson)!;
+		return collection;
+	}
+
+	private async Task Search()
+	{
+		await SetStatus(true);
+		Console.WriteLine($"Searching: '{mainCollectionName}', '{searchPhrase}'");
+		if (await database.DoesCollectionExist(mainCollectionName))
+		{
+			var results = await database.Search(mainCollectionName, searchPhrase);
+			quotes.Clear();
+			quotes = await results.ToAsyncEnumerable().SelectAwait(
+				async (q) => {
+					//q.Metadata.Description;
+					var quote = new Quote() { Text = q.Metadata.Text }.Text;
+					var meta = JsonConvert.DeserializeObject<QuoteMetadata>(q.Metadata.Description)!;
+					var collectionMeta = await GetEpisodeCollection(meta);
+					var videoId = collectionMeta.QuoteOrigin!.Video!.SourceUrl.Replace("https://www.youtube.com/watch?v=", "");
+					var specialKidYoutubePartOfTheLink = collectionMeta.QuoteOrigin!.Video!.SourceUrl.Replace("youtube.com", "youtu.be").Replace("/watch?v=", "").Replace("www.", "");
+					var embedLink = $"https://www.youtube.com/embed/{videoId}?start={(int)meta.Quote!.StartTimeSeconds}";
+					
+					var link = $"{specialKidYoutubePartOfTheLink}?t={(int)meta.Quote!.StartTimeSeconds}";
+
+					return new KeyValuePair<string, string>(quote, embedLink);
+				}
+			).ToListAsync();
+			await SetStatus(false);
+		}
+		await InvokeAsync(StateHasChanged);
+	}
+
+}

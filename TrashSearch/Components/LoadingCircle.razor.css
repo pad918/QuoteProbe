@@ -1,0 +1,42 @@
+﻿.loading-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin: 0px 6px;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+    .dot:nth-of-type(1) {
+        background-color: var(--secondary);
+        animation-delay: 0s;
+    }
+
+    .dot:nth-of-type(2) {
+        background-color: var(--accent);
+        animation-delay: 0.2s;
+    }
+
+    .dot:nth-of-type(3) {
+        background-color: var(--primary);
+        animation-delay: 0.4s;
+    }
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.8);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(0.8);
+    }
+}

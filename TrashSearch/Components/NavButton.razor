@@ -1,0 +1,13 @@
+﻿@inject NavigationManager NavigationManager
+
+<button class="nav-button" @onclick="() => NavigationManager.NavigateTo(Link!)">
+    @ChildContent
+</button>
+
+@code {
+    [Parameter]
+    public string? Link { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; } = null!;
+}

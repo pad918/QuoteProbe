@@ -1,0 +1,189 @@
+﻿@page "/upload"
+@using TrashSearch.Services
+@using TrashSearch.Components
+@using TrashSearch.Data
+@using System.Threading;
+@using System.Threading.Tasks;
+@inject AudioDownloaderService DownloaderService
+@inject FileTranscriberService TransScriberService
+
+<div style="color: white;">
+	<h3>Upload new episodes to the database</h3>
+	<div>
+		@foreach (var k in _inputs.Keys)
+		{
+			<div style="display: flex; align-items: center; margin: 0 10px">
+				<label> ep </label>
+				<input style="width: 5rem" type="number" @bind="@_inputs[k].V1" />
+				<input placeholder="url" type="text" style="width: 30rem" @bind="@_inputs[k].V2">
+				<button @onclick="@(() => _inputs.Remove(k))">Remove</button>
+			</div>
+			
+		}
+		<button @onclick="@(() => { 
+			int key = random.Next(); 
+			_inputs.Add(key, new Pair<int, string>(
+				(_inputs.Any()) ? _inputs.Last().Value.V1+1 : 1, "")
+			);
+			_progressLogs.Add(key, null);
+		}
+		)">Add video</button>
+		<button @onclick="@(() => UploadAll(_inputs.Values.Select(v => v).ToList(), 10))">Upload all</button>
+		<button @onclick="@(async () => (await _database.GetAllCollections()).ForEach(Console.WriteLine))">List episodes</button>
+	</div>
+	
+	<div>
+		<h2>Log:</h2>
+		@foreach (var k in _inputs.Keys)
+		{
+			<hr />
+			<ProgressLog @ref="_progressLogs[k]"></ProgressLog>
+		}
+	</div>
+</div>
+@code {
+
+	private class Pair<T1, T2>
+	{
+		public T1 V1 { get; set; }
+		public T2 V2 { get; set; }
+		public Pair(T1 v1, T2 v2)
+		{
+			V1 = v1;
+			V2 = v2;
+		}
+	}
+
+	const string mainCollectionName = "TrashTaste_3";
+	const string metadataCollectionName = "TrashTasteMetaData_3";
+
+	private readonly Random random = new();
+
+	//Not optimal, order is not well defined
+	private Dictionary<int, Pair<int, string>> _inputs = new();
+	private Dictionary<int, ProgressLog?> _progressLogs = new();
+
+	private DatabaseService _database = new ();
+
+
+
+	private async Task UploadAll(List<Pair<int, string>> episodes, int maxThreads = 4)
+	{
+		List<int> k = new();
+		k.BinarySearch(1);
+		Console.WriteLine("Uploading all...");
+
+		// create a SemaphoreSlim object with a count of 4
+		SemaphoreSlim semaphore = new SemaphoreSlim(maxThreads);
+
+		// execute your function in parallel with a maximum of 4 threads
+		await Task.WhenAll(episodes.Select(async input =>
+		{
+			await semaphore.WaitAsync();
+			try
+			{
+				await UploadVideo(input.V2, input.V1);
+			}
+			finally
+			{
+				semaphore.Release();
+			}
+		}));
+	}
+
+	private async Task UploadVideo(string url, int episodeNumber)
+	{
+		int key = _inputs.First((a) => a.Value.V2 == url).Key;
+
+		//Get video
+		await _progressLogs[key]!.AddLog($"Downloading video {url}");
+		Video video;
+		try
+		{
+			video = await DownloaderService.FetchVideo(url);
+		}
+		catch(Exception e)
+		{
+			await _progressLogs[key]!.AddLog($"Exception: {e.Message}");
+			await _progressLogs[key]!.AddLog($"Failed to download video, exiting...");
+			return;
+		}
+		await _progressLogs[key]!.AddLog($"Downloaded video {video}");
+
+		//Get quotes
+		await _progressLogs[key]!.AddLog($"Downloading subtitles of video");
+		List<Quote> quotes;
+		try
+		{
+			var captionsDownloader = new CaptionsDownloaderService();
+			var captionPath = await captionsDownloader.Download(url);
+			quotes = TransScriberService.GetRawQuoteVtt(captionPath);
+			await _progressLogs[key]!.AddLog($"Transcription of video compleated!");
+		}
+		catch(Exception e)
+		{
+			await _progressLogs[key]!.AddLog($"Failed to download subtitles: {e.Message}");
+			return;
+		}
+
+		//Upload quotes
+		try
+		{
+			await _progressLogs[key]!.AddLog($"Uploading {quotes.Count} quotes to database");
+
+			//Create collection if it does not exist
+			if (!await _database.DoesCollectionExist(mainCollectionName))
+			{
+				await _database.CreateCollection(mainCollectionName);
+			}
+
+			//Check if episode already exists in the database
+			var result = await _database.SearchById(mainCollectionName, episodeNumber.ToString());
+			if (result != null)
+			{
+				await _progressLogs[key]!.AddLog($"Episode {episodeNumber} already exists in the database, aborting");
+				throw new("Episode already exists");
+			}
+
+			//Upload quotes and reference to video
+			List<string> quoteIds = new();
+			int i = 0;
+			await _progressLogs[key]!.AddLog("Added 0 logs");
+			foreach(var q in quotes)
+			{
+				string id = $"{episodeNumber}_{i}";
+				quoteIds.Add(id);
+				var metadata = new QuoteMetadata(episodeNumber, i, q).Serialize();
+				//Try to upload at max 100 times. Wait 10 seconds between attempts.
+				for (int t = 0; t < 100; t++) {
+					try
+					{
+						await _database.Add(mainCollectionName, q.Text, id, metadata);
+						await _progressLogs[key]!.UpdateLastLog($"Added {i}/{quotes.Count}");
+						i++;
+						break;
+					}
+					catch (Exception)
+					{
+						await _progressLogs[key]!.AddLog($"Failed to add to database, trying again");
+						await Task.Delay(10000);
+					}
+				}
+			}
+
+			//Add metadata about the episode
+			var episodeMetadata = new EpisodeCollection(new QuoteOrigin(video, episodeNumber), quoteIds);
+			await _database.Add(metadataCollectionName, "", episodeNumber.ToString(), episodeMetadata.Serialize()!);
+			await _progressLogs[key]!.AddLog($"Success, added {quotes.Count} quotes to database");
+
+		}
+		catch(Exception e)
+		{
+			await _progressLogs[key]!.AddLog($"Failed to upload to database {e.Message}");
+		}
+		await _progressLogs[key]!.AddLog($"REMOVEING FILE {video.Location}");
+		await _progressLogs[key]!.AddLog($"Done");
+		_progressLogs[key]!.Active = false;
+
+	}
+}

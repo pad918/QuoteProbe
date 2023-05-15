@@ -1,0 +1,60 @@
+﻿.centered_header {
+    text-align: center;
+    font-size: 4rem;
+    font-weight: bold;
+    margin-top: 2rem;
+    margin-bottom: 4rem;
+    background: linear-gradient(to right, var(--saturated), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.large_input {
+    margin: 0 auto;
+    width: 80vw;
+    min-width: 200px;
+    max-height: 50px;
+    font-size: 25px;
+    height: 4rem;
+    text-align: center;
+    background-color: var(--secondary);
+    color: #551980;
+}
+
+.quotes-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 5px;
+}
+
+.grid-item {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+}
+
+.quotes-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.quote-item {
+    margin-bottom: 10px;
+}
+
+.quote-text {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.quote-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+    .quote-link:hover {
+        text-decoration: underline;
+    }
