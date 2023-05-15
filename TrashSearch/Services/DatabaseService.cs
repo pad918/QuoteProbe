@@ -88,5 +88,30 @@ namespace TrashSearch.Services
             return await _memoyStore.GetCollectionsAsync().ToListAsync();
         }
 
+        // SLOW, SHOULD NOT BE DONE ONE BY ONE!
+        public async Task<List<MemoryRecord>> GetAllPointsInCollection(string collectionName, int episodeNumber)
+        {
+            return new();
+            List<MemoryRecord> records = new();
+            if (! await DoesCollectionExist(collectionName))
+                return records;
+            for(int i = 0; i<10; i++)
+            {
+                try
+                {
+                    string pointId = $"{episodeNumber}_{i}";
+                    var record = await _memoyStore.GetWithPointIdAsync(collectionName, pointId);
+                    if (record == null)
+                        break;
+                    records.Add(record);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+			}
+            return records;
+		}
+
     }
 }

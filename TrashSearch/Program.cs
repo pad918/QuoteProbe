@@ -10,6 +10,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<AudioDownloaderService>();
 builder.Services.AddSingleton<FileTranscriberService>();
+builder.Services.AddSingleton<IndexerService>();
 
 var app = builder.Build();
 

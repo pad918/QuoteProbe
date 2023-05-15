@@ -1,7 +1,9 @@
-﻿using TrashSearch.Components;
+﻿using System.Linq.Expressions;
+using TrashSearch.Components;
 using TrashSearch.Data;
 using YoutubeDLSharp;
 using static System.Reflection.Metadata.BlobBuilder;
+using static TrashSearch.Services.IndexerService;
 
 namespace TrashSearch.Services
 {
@@ -18,10 +20,34 @@ namespace TrashSearch.Services
             public int EpisodeNumber { get; set; }
             public float Progress { get; set; } = 0;
 
-            public enum IndexingState { Waiting, Indexing, Done, Failed}
+            public DateTime? StartTime { get; private set; }
+
+            public enum IndexingState { Waiting, Indexing, Done, Failed }
 
             public Exception? exception { get; set; }
             public IndexingState State { get; set; } = IndexingState.Waiting;
+
+            public void StartIndexing()
+            {
+                State = IndexingState.Indexing;
+				StartTime = DateTime.Now;
+			}
+
+            public TimeSpan TimeRunning()
+            {
+                if(StartTime!=null) return DateTime.Now.Subtract((DateTime)StartTime);
+                else return TimeSpan.Zero;
+            }
+
+            public TimeSpan EstimatedTimeLeft()
+            {
+                if (Progress == 0)
+                {
+                    return TimeSpan.MaxValue;
+                }
+                var running = TimeRunning();
+                return running.Divide(Progress).Subtract(running);
+            }
 
             public IndexerJob(string id, string url, int episodeNumber)
             {
@@ -30,38 +56,77 @@ namespace TrashSearch.Services
                 EpisodeNumber = episodeNumber;
             }
         }
-        public bool IsIndexing { get; private set; }
+
+        public bool TryLockIndexer()
+        {
+            lock (_isIndexing)
+            {
+                bool didLock = !IsIndexing;
+                if (didLock)
+                    _isIndexing.Value = true;
+                return didLock;
+            }
+        }
+        class TreadBool
+        {
+            public bool Value { get; set; } = false;
+        }
+        private TreadBool _isIndexing = new();
+
+        // Is this how you make things threadsafe?
+        public bool IsIndexing
+        {
+            get { return _isIndexing.Value; }
+            private set { lock (_isIndexing) _isIndexing.Value = value; }
+        }
 
         public List<IndexerJob> Jobs { get; private set; } = new();
 
-        private AudioDownloaderService downloaderService    = new();
-        private FileTranscriberService transScriberService  = new();
-        private DatabaseService        _database            = new();
+        private AudioDownloaderService downloaderService = new();
+        private FileTranscriberService transScriberService = new();
+        private DatabaseService _database = new();
 
-        private string mainCollectionName     => "Test10";
+        private string mainCollectionName => "Test10";
         private string metadataCollectionName => "Test10_Meta";
 
-        public IndexerService() { 
-        
+        public IndexerService()
+        {
+
         }
 
-        public async Task IndexVideos(IEnumerable<Tuple<int, string>> episodes)
+        public async Task IndexVideos(IEnumerable<Tuple<int, string>> episodes, int maxThreads=4)
         {
-            foreach(var e in episodes) {
-                var job = new IndexerJob(e.Item1.ToString(), e.Item2, e.Item1);
-                job.State = IndexerJob.IndexingState.Indexing;
-                Jobs.Add(job);
-                EventHandler<float> eventHandler = new((_, p) => job.Progress = p);
-                await IndexVideo(e.Item2, e.Item1, eventHandler);
-                job.State = IndexerJob.IndexingState.Done;
-            }
+            Jobs = episodes.Select((e) => new IndexerJob(e.Item1.ToString(), e.Item2, e.Item1)).ToList();
+
+			// create a SemaphoreSlim object with a count of 4
+			SemaphoreSlim semaphore = new SemaphoreSlim(maxThreads);
+
+			// execute your function in parallel with a maximum of 4 threads
+			await Task.WhenAll(Jobs.Select(async job =>
+			{
+				await semaphore.WaitAsync();
+				try
+				{
+                    job.StartIndexing();
+					await IndexVideo(job.Url, job.EpisodeNumber, new((_, p) => job.Progress = p));
+                    job.State = IndexerJob.IndexingState.Done;
+				}
+				finally
+				{
+					semaphore.Release();
+				}
+			}));
+
+			//Threadsafe set?
+			IsIndexing = false;
+
         }
 
         private async Task IndexVideo(string url, int episodeNumber, EventHandler<float>? progressCallback = null)
         {
 
             //Get video
-            
+
             Video video;
             try
             {
@@ -83,6 +148,7 @@ namespace TrashSearch.Services
             {
                 throw new($"Failed to download subtitles: {e.Message}");
             }
+            Console.WriteLine($"Found {quotes.Count} quotes, uploading...");
             await UploadQuotes(quotes, episodeNumber, video, progressCallback);
 
         }
@@ -121,10 +187,11 @@ namespace TrashSearch.Services
                         {
                             await _database.Add(mainCollectionName, q.Text, id, metadata);
 
-                            //FUNGERAR DET SÅHÄR?
-                            progressCallback?.BeginInvoke(this, (i / (float)quotes.Count), (a) => { }, null);
+                            if (progressCallback != null) progressCallback(this, (i / (float)quotes.Count));
+
                             i++;
                             break;
+
                         }
                         catch (Exception)
                         {
