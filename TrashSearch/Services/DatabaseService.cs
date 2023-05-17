@@ -2,6 +2,8 @@
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Memory;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using TrashSearch.Data;
+using Newtonsoft.Json;
 
 namespace TrashSearch.Services
 {
@@ -88,28 +90,57 @@ namespace TrashSearch.Services
             return await _memoyStore.GetCollectionsAsync().ToListAsync();
         }
 
-        // SLOW, SHOULD NOT BE DONE ONE BY ONE!
-        public async Task<List<MemoryRecord>> GetAllPointsInCollection(string collectionName, int episodeNumber)
+        public async Task RemoveAll(string collectionName, List<string> pointIds)
         {
-            return new();
+			await _memoyStore.RemoveBatchAsync(collectionName, pointIds);
+		}
+
+        public async Task RemoveEpisode(string collectionName, string metaCollectionName, EpisodeCollection episode)
+        {
+			var pointIds = episode.QuoteIds!.Select(p => p).ToList();
+            Console.WriteLine($"Removing {pointIds.Count} quotes");
+			await RemoveAll(collectionName, pointIds);
+            Console.WriteLine($"Removing metadata");
+			await Remove(metaCollectionName, episode.QuoteOrigin!.EpisodeNumber.ToString());
+            Console.WriteLine("Done");
+        }
+
+        public async Task<EpisodeCollection?> GetEpisodeMetadata(string collectionName, int episodeNumber)
+        {
+			var record = await _memoyStore.GetAsync(collectionName, episodeNumber.ToString());
+            var serialized = record?.Metadata.Description ?? "";
+			return JsonConvert.DeserializeObject<EpisodeCollection>(serialized);
+		}
+
+        // SLOW, SHOULD NOT BE DONE ONE BY ONE!
+        public async Task<List<MemoryRecord>> GetAllPointsInCollection(string collectionName, int episodeNumber, int bathSize = 100)
+        {
+            //return new();
             List<MemoryRecord> records = new();
-            if (! await DoesCollectionExist(collectionName))
+            var abc = DoesCollectionExist(collectionName);
+            abc.Wait();
+
+			if (! abc.Result)
                 return records;
-            for(int i = 0; i<10; i++)
+            bool hasReachedEnd = false;
+            for(int i = 0; !hasReachedEnd; i++)
             {
-                try
+                List<string> pointIds = new();
+				for (int j = 0; j < bathSize; j++)
                 {
-                    string pointId = $"{episodeNumber}_{i}";
-                    var record = await _memoyStore.GetWithPointIdAsync(collectionName, pointId);
-                    if (record == null)
-                        break;
-                    records.Add(record);
+                    pointIds.Add($"{episodeNumber}_{i*bathSize+j}");
                 }
-                catch (Exception ex)
+
+				var batch = _memoyStore.GetBatchAsync(collectionName, pointIds);
+				await foreach(var r in batch)
                 {
-                    Console.WriteLine(ex);
-                }
+                    if (r != null)
+                        records.Add(r);
+                    else
+                        hasReachedEnd = true;
+				}
 			}
+
             return records;
 		}
 

@@ -84,15 +84,21 @@ namespace TrashSearch.Services
 
         private AudioDownloaderService downloaderService = new();
         private FileTranscriberService transScriberService = new();
-        private DatabaseService _database = new();
+        private DatabaseService? _database;
 
-        private string mainCollectionName => "Test10";
-        private string metadataCollectionName => "Test10_Meta";
+        private string mainCollectionName => "TrashTaste_4";
+        private string metadataCollectionName => "TrashTasteMetaData_4";
 
         public IndexerService()
         {
 
         }
+
+        public IndexerService SetDatabase(DatabaseService databaseService)
+        {
+			_database = databaseService;
+            return this;
+		}
 
         public async Task IndexVideos(IEnumerable<Tuple<int, string>> episodes, int maxThreads=4)
         {
@@ -155,13 +161,13 @@ namespace TrashSearch.Services
 
         private async Task UploadQuotes(List<Quote> quotes, int episodeNumber, Video video, EventHandler<float>? progressCallback)
         {
-            //Upload quotes
-            try
+			//Upload quotes
+			try
             {
                 //Create collection if it does not exist
-                if (!await _database.DoesCollectionExist(mainCollectionName))
+                if (true || !await _database.DoesCollectionExist(mainCollectionName))
                 {
-                    await _database.CreateCollection(mainCollectionName);
+                    await _database!.CreateCollection(mainCollectionName);
                 }
 
                 //Check if episode already exists in the database

@@ -7,6 +7,7 @@
 @inject AudioDownloaderService	DownloaderService
 @inject FileTranscriberService	TransScriberService
 @inject IndexerService			IndexerService;
+@inject DatabaseService			DatabaseService;
 
 <div style="color: white;">
 	<h3>Upload new episodes to the database</h3>
@@ -54,6 +55,27 @@
 				</tr>
 			}
 		</table>
+		<h3>SYNLIG?</h3>
+	</div>
+	<div style="color: var(--text)">
+		<h3>Indexed episodes</h3>
+		<table>
+			<tr>
+				<th>Episode number</th>
+				<th>Quotes</th>
+				<th>Remove?</th>
+			</tr>
+			@foreach (var episode in _episodes)
+			{
+				<tr>
+					<th>@episode.QuoteOrigin!.EpisodeNumber</th>
+					<th>@episode.QuoteIds!.Count</th>
+					<th>
+						<button @onclick="@(() => DatabaseService.RemoveEpisode(mainCollectionName, metadataCollectionName, episode))">Remove</button>
+					</th>
+				</tr>
+			}
+		</table>
 	</div>
 </div>
 @code {
@@ -73,17 +95,19 @@
 		}
 	}
 
-	string mainCollectionName => "Test10";
-	string metadataCollectionName => "Test10_Meta";
+	string mainCollectionName => "TrashTaste_4";
+	string metadataCollectionName => "TrashTasteMetaData_4";
 
 	private readonly Random random = new();
 
 	//Not optimal, order is not well defined
 	private Dictionary<int, Pair<int, string>> _inputs = new();
 
-	private DatabaseService _database = new ();
+	private List<EpisodeCollection> _episodes = new();
 
 	private System.Threading.Timer? timer;
+
+	private bool _isSearching = false;
 
 	protected override void OnInitialized()
 	{
@@ -98,11 +122,35 @@
 			period: TimeSpan.FromSeconds(1)
 		);
 
-		//PRINT ALL POINTS IN THE CURRENT COLLECITON:
-		var pointWaiter = _database.GetAllPointsInCollection(mainCollectionName, 1);
-		pointWaiter.Wait();
-		var points = pointWaiter.Result;
-		points.ForEach(p => Console.WriteLine($"\t {p.Metadata.Id}: {p.Metadata.Text}"));
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		var episode = await Task.Run(() => DatabaseService.GetEpisodeMetadata(metadataCollectionName, 1));
+		Console.WriteLine($"Episode: {episode!.Serialize()}");
+		if (!_isSearching){ 
+			_isSearching = true;
+			await Test();
+		}
+	}
+
+	private async Task<int> Test()
+	{
+		
+		//LÄR DIG VADFAN ASYNC GÖR!!!
+		for (int i = 1; i < 100; i++)
+		{
+			
+
+			var episode = await Task.Run(() => DatabaseService.GetEpisodeMetadata(metadataCollectionName, i));
+			if (episode == null)
+				continue;
+			Console.WriteLine($"Added episode {i}");
+			_episodes.Add(episode);
+			await InvokeAsync(StateHasChanged);
+		}
+		await InvokeAsync(StateHasChanged);
+		return 0;
 	}
 
 	private async Task UploadAll(List<Pair<int, string>> episodes, int maxThreads = 1)
