@@ -15,7 +15,7 @@ namespace TrashSearch.Services
         public DatabaseService()
         {
             string QdrantKey = Environment.GetEnvironmentVariable("QDRANT_API_KEY")!;
-            string Endpoint = Environment.GetEnvironmentVariable("QDRANT_ENDPOINT")!;
+            string Endpoint = "http://localhost:6333";//Environment.GetEnvironmentVariable("QDRANT_ENDPOINT")!;
             var EmbeddingKey = System.Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new Exception("No api key found!");
 
             Console.WriteLine($"Using keys: \n\t{QdrantKey}\n\t{Endpoint}\n\t{EmbeddingKey}");
@@ -99,9 +99,22 @@ namespace TrashSearch.Services
         {
 			var pointIds = episode.QuoteIds!.Select(p => p).ToList();
             Console.WriteLine($"Removing {pointIds.Count} quotes");
-			await RemoveAll(collectionName, pointIds);
+            //await RemoveAll(collectionName, pointIds);
+
+            //The batch method did not work, so we do it one by one
+            pointIds.ForEach(async (id) => {
+                Console.WriteLine($"Removing id {id}");
+                await _memoyStore.RemoveWithPointIdAsync(collectionName, id); 
+            });
             Console.WriteLine($"Removing metadata");
-			await Remove(metaCollectionName, episode.QuoteOrigin!.EpisodeNumber.ToString());
+			await _memoyStore.RemoveWithPointIdAsync(metaCollectionName, episode.QuoteOrigin!.EpisodeNumber.ToString());
+            try
+            {
+                await _memoyStore.RemoveAsync(metaCollectionName, episode.QuoteOrigin!.EpisodeNumber.ToString());
+            }
+            catch (Exception){
+                Console.WriteLine("Failed to remove async?");
+            }
             Console.WriteLine("Done");
         }
 

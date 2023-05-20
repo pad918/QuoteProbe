@@ -3,6 +3,7 @@
 @using TrashSearch.Components
 @using TrashSearch.Data
 @using System.Threading;
+@using YoutubeExplode;
 @using System.Threading.Tasks;
 @inject AudioDownloaderService	DownloaderService
 @inject FileTranscriberService	TransScriberService
@@ -11,14 +12,37 @@
 
 <div style="color: white;">
 	<h3>Upload new episodes to the database</h3>
-	<div>
+	<div class = "playList">
+		<h2>Add episodes</h2>
+		<div class="playListItems">
+			
+			<input style="width: 5rem" type="number" @bind="@_playlistStart" />
+			<input placeholder="url" type="text" style="width: 30rem" @bind="@_playlistUrl">
+			<button @onclick="@(
+				async () => {
+					var youtube = new YoutubeClient();
+					var playlist = await youtube.Playlists.GetAsync(_playlistUrl);
+					//Copilot wrote all of this, (almost, it failed to understand async just like me...)
+					var videos = youtube.Playlists.GetVideosAsync(playlist.Id);
+					await foreach (var video in videos)
+					{
+						_inputs.Add(random.Next(), new Pair<int, string>(_playlistStart++, video.Url));
+					}	
+
+				})">
+				Add playlist
+				</button>
+		</div>
+	</div>
+	
+	<div class="inputList">
 		@foreach (var k in _inputs.Keys)
 		{
 			<div style="display: flex; align-items: center; margin: 0 10px">
 				<label> ep </label>
 				<input style="width: 5rem" type="number" @bind="@_inputs[k].V1" />
 				<input placeholder="url" type="text" style="width: 30rem" @bind="@_inputs[k].V2">
-				<button @onclick="@(() => _inputs.Remove(k))">Remove</button>
+				<button class="bi bi-trash" @onclick="@(() => _inputs.Remove(k))">Remove</button>
 			</div>
 			
 		}
@@ -31,7 +55,7 @@
 		)">Add video</button>
 		<button @onclick="@(() => UploadAll(_inputs.Values.Select(v => v).ToList()))">Upload all</button>
 	</div>
-	<div style="color: var(--text)">
+	<div class="jobList">
 		<table>
 			<tr>
 				<th>Episode number</th>
@@ -55,10 +79,9 @@
 				</tr>
 			}
 		</table>
-		<h3>SYNLIG?</h3>
 	</div>
-	<div style="color: var(--text)">
-		<h3>Indexed episodes</h3>
+	<div class="indexedEpisodes">
+		<br /><p>Indexed episodes</p>
 		<table>
 			<tr>
 				<th>Episode number</th>
@@ -71,7 +94,7 @@
 					<th>@episode.QuoteOrigin!.EpisodeNumber</th>
 					<th>@episode.QuoteIds!.Count</th>
 					<th>
-						<button @onclick="@(() => DatabaseService.RemoveEpisode(mainCollectionName, metadataCollectionName, episode))">Remove</button>
+						<button class="bi bi-trash" @onclick="@(() => DatabaseService.RemoveEpisode(mainCollectionName, metadataCollectionName, episode))">Remove</button>
 					</th>
 				</tr>
 			}
@@ -95,10 +118,13 @@
 		}
 	}
 
-	string mainCollectionName => "TrashTaste_4";
-	string metadataCollectionName => "TrashTasteMetaData_4";
+	private string mainCollectionName     => IndexerService.mainCollectionName;
+	private string metadataCollectionName => IndexerService.metadataCollectionName;
 
 	private readonly Random random = new();
+
+	private string _playlistUrl = "";
+	private int    _playlistStart = 1;
 
 	//Not optimal, order is not well defined
 	private Dictionary<int, Pair<int, string>> _inputs = new();
@@ -126,8 +152,9 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		Console.WriteLine($"Searching for episode 1");
 		var episode = await Task.Run(() => DatabaseService.GetEpisodeMetadata(metadataCollectionName, 1));
-		Console.WriteLine($"Episode: {episode!.Serialize()}");
+		if(episode!=null) Console.WriteLine($"Episode: {episode.Serialize()}");
 		if (!_isSearching){ 
 			_isSearching = true;
 			await Test();

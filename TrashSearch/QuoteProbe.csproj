@@ -10,8 +10,10 @@
     <PackageReference Include="Microsoft.SemanticKernel" Version="0.13.277.1-preview" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Memory.Qdrant" Version="0.13.277.1-preview" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Toolbelt.AspNetCore.CssLiveReloader" Version="1.1.4" />
     <PackageReference Include="Whisper.net" Version="1.4.0" />
     <PackageReference Include="YoutubeDLSharp" Version="1.0.0-beta6" />
+    <PackageReference Include="YoutubeExplode" Version="6.2.14" />
   </ItemGroup>
 
 </Project>

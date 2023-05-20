@@ -1,23 +1,118 @@
-﻿progress {
+﻿
+
+progress {
     width: 100%;
     height: 100%;
     min-height: 15px;
     min-width: 300px;
     border-radius: 3px;
-    background-color: var(--background);
+    background: linear-gradient(to right, #F0F0F0, var(--background));
 }
 
     progress::-webkit-progress-value {
-        background-color: var(--primary);
+        background: linear-gradient(to right, var(--saturated), var(--accent));
         border-radius: 3px;
     }
 
     progress::-moz-progress-bar {
         background-color: var(--primary);
+        background: linear-gradient(to right, var(--saturated), var(--accent));
         border-radius: 3px;
     }
 
     progress::-ms-fill {
-        background-color: var(--primary);
+        background: linear-gradient(to right, var(--saturated), var(--accent));
         border-radius: 3px;
     }
+
+.indexedEpisodes {
+    color: var(--text);
+    display: grid;
+    align-items: center;
+    justify-content: center;
+       
+}
+
+    .indexedEpisodes tr {
+        border: 1px;
+        border-color: var(--primary);
+        border-style: groove;
+        border-left-style: hidden;
+        border-right-style: hidden;
+        
+    }
+
+    .indexedEpisodes th,
+    .indexedEpisodes td {
+        border: 1px;
+        border-color: var(--primary);
+        border-style: groove;
+        border-left-style: hidden;
+        border-right-style: hidden;
+        
+        padding: 5px 10vw;
+    }
+
+.jobList {
+    color: var(--text);
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    margin: 10px;
+    padding: 0px;
+    text-align: center;
+}
+
+.jobList th{
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    padding: 5px 10px;
+}
+
+.playList{
+    color: var(--text);
+}
+
+    .playList h2 {
+        background: linear-gradient(to right, var(--saturated), var(--accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 30px;
+        font-weight: bold;
+        text-align: center
+    }
+
+.playList input{
+    color: var(--primary);
+    background-color: var(--secondary);
+    border-radius: 5px;
+    border: 1px solid var(--primary);
+    height: 40px;
+    margin: 10px;
+}
+
+button{
+    height: 100%;
+    background-color: var(--primary);
+    color: var(--background);
+    border-radius: 5px;
+}
+
+.playListItems {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px 10px;
+    padding: 10px;   
+}
+
+.inputList{
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    margin: 10px 10px;
+    padding: 10px;   
+}
+.inputList button {
+}

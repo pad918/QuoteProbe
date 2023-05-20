@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using TrashSearch.Components;
 using TrashSearch.Data;
+using YoutubeExplode;
 using YoutubeDLSharp;
 using static System.Reflection.Metadata.BlobBuilder;
 using static TrashSearch.Services.IndexerService;
@@ -86,8 +87,8 @@ namespace TrashSearch.Services
         private FileTranscriberService transScriberService = new();
         private DatabaseService? _database;
 
-        private string mainCollectionName => "TrashTaste_4";
-        private string metadataCollectionName => "TrashTasteMetaData_4";
+        public string mainCollectionName => "TrashTaste_1";
+        public string metadataCollectionName => "TrashTasteMetaData_1";
 
         public IndexerService()
         {

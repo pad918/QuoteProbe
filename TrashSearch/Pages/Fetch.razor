@@ -5,7 +5,11 @@
 @using Newtonsoft.Json;
 @using TrashSearch.Components;
 @using System.Text.Json.Serialization;
+
+
 @inject AudioDownloaderService DownloaderService
+@inject IndexerService IndexerService;
+
 <div style=" background-color: var(--background); padding: 100px 100px 100px 100px; margin: 0; width: 100%">
 	<div style="display: flex; justify-content: center; flex-wrap:wrap; margin: 50px;">
 		<h1 class="centered_header">SEARCH FOR TRASHTASTE QUOTES</h1><br />
@@ -22,14 +26,14 @@
 	@foreach (var quote in quotes)
 	{
 		<div class="grid-item">
-			<YTVideo VideoUrl="@quote.Value" Quote="@quote.Key" />
+				<YTVideo VideoUrl="@quote.Item2" Quote="@quote.Item1" EpisodeCollection="@quote.Item3" SearchRelevance="@quote.Item4" />
 		</div>
 	}
 </div>
 
 
 @code {
-	private List<KeyValuePair<string, string>> quotes = new();
+	private List<Tuple<string, string, EpisodeCollection, float>> quotes = new();
 
 	private string searchPhrase = "";
 
@@ -37,8 +41,8 @@
 
 	private DatabaseService database = new DatabaseService();
 
-	private string mainCollectionName => "TrashTaste_4";
-	private string metadataCollectionName => "TrashTasteMetaData_4";
+	private string mainCollectionName     => IndexerService.mainCollectionName;
+	private string metadataCollectionName => IndexerService.metadataCollectionName;
 
 	private async Task SetStatus(bool status)
 	{
@@ -46,10 +50,10 @@
 		await InvokeAsync(StateHasChanged);
 	}
 
-	private async Task<EpisodeCollection> GetEpisodeCollection(QuoteMetadata meta)
+	private async Task<EpisodeCollection?> GetEpisodeCollection(QuoteMetadata meta)
 	{
-		var collectionMetaJson = (await database.SearchById(metadataCollectionName, meta.EpisodeNumber.ToString()))!.Metadata.Description;
-		var collection = JsonConvert.DeserializeObject<EpisodeCollection>(collectionMetaJson)!;
+		var collectionMetaJson = (await database.SearchById(metadataCollectionName, meta.EpisodeNumber.ToString()))?.Metadata.Description;
+		var collection = collectionMetaJson==null ? null : JsonConvert.DeserializeObject<EpisodeCollection>(collectionMetaJson ?? "");
 		return collection;
 	}
 
@@ -62,20 +66,23 @@
 			var results = await database.Search(mainCollectionName, searchPhrase);
 			quotes.Clear();
 			quotes = await results.ToAsyncEnumerable().SelectAwait(
-				async (q) => {
+				async (q) =>
+				{
 					//q.Metadata.Description;
 					var quote = new Quote() { Text = q.Metadata.Text }.Text;
 					var meta = JsonConvert.DeserializeObject<QuoteMetadata>(q.Metadata.Description)!;
-					var collectionMeta = await GetEpisodeCollection(meta);
-					var videoId = collectionMeta.QuoteOrigin!.Video!.SourceUrl.Replace("https://www.youtube.com/watch?v=", "");
+					var collectionMeta = await GetEpisodeCollection(meta)!;
+					//if (collectionMeta == null) return new KeyValuePair<string, string>(quote, "");
+					var videoId = collectionMeta!.QuoteOrigin!.Video!.SourceUrl.Replace("https://www.youtube.com/watch?v=", "");
 					var specialKidYoutubePartOfTheLink = collectionMeta.QuoteOrigin!.Video!.SourceUrl.Replace("youtube.com", "youtu.be").Replace("/watch?v=", "").Replace("www.", "");
 					var embedLink = $"https://www.youtube.com/embed/{videoId}?start={(int)meta.Quote!.StartTimeSeconds}";
-					
+
 					var link = $"{specialKidYoutubePartOfTheLink}?t={(int)meta.Quote!.StartTimeSeconds}";
 
-					return new KeyValuePair<string, string>(quote, embedLink);
+					return new Tuple<string, string, EpisodeCollection, float>(quote, embedLink, collectionMeta, (float)q.Relevance);
 				}
 			).ToListAsync();
+			quotes.Sort((a, b) => b.Item4 - a.Item4>=0?1:-1);
 			await SetStatus(false);
 		}
 		await InvokeAsync(StateHasChanged);

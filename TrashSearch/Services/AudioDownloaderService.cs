@@ -18,9 +18,10 @@ namespace TrashSearch.Services
             //var b = Enumerable.Range(0, 10).Select((a) => "#").Aggregate((a, b) => a+b);
             Console.WriteLine("DOWNLOADED FILE...");
             var fetch = await ytdl.RunVideoDataFetch(url);
-            //File.Move(res.Data, "temp.mp3");
-            //Console.WriteLine(res.Success?$"Success: {res.Data}":$"Fail: {res.ErrorOutput.ToList().Aggregate((a, b) => $"{a} {b}")}");
-            VideoData video = fetch.Data;
+			//File.Move(res.Data, "temp.mp3");
+			//Console.WriteLine(res.Success?$"Success: {res.Data}":$"Fail: {res.ErrorOutput.ToList().Aggregate((a, b) => $"{a} {b}")}");
+			
+			VideoData video = fetch.Data;
             return new(video.Title, video.WebpageUrl, "", video.UploadDate);
         }
 

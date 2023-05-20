@@ -10,7 +10,10 @@ namespace TrashSearch.Services
         public async Task<string> Download(string uri)
         {
             var ytdl = new YoutubeDL();
-            var options = new OptionSet() { AllSubs = true, ConvertSubs = "vtt", SkipDownload = true, RestrictFilenames = true };
+            var options = new OptionSet() { 
+                AllSubs = true, ConvertSubs = "vtt", SkipDownload = true, 
+                RestrictFilenames = true, NoPlaylist = true 
+            };
 
             //Download all lyrics using the ytdl:
 
@@ -21,9 +24,10 @@ namespace TrashSearch.Services
             //var result = await ytdl.RunAudioDownload(uri, progress: progress, overrideOptions: options);
             var result = await ytdl.RunWithOptions(new string[] { uri }, options, new());
 
-            Console.WriteLine("DONE");
             result.Data.ToList().ForEach(x => Console.WriteLine(x));
-            return result.Data.ToList().Find((l) => l.StartsWith("[download] Destination: "))!.Substring("[download] Destination: ".Length);
+            var path = result.Data.ToList().Find((l) => l.StartsWith("[download] Destination: "))!.Substring("[download] Destination: ".Length);
+            Console.WriteLine($"DONE: {path}");
+			return path;
         }
     }
 }

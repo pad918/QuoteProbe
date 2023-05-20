@@ -1,6 +1,10 @@
-﻿<div class="youtube-video">
+﻿@using TrashSearch.Data;
+
+<div class="youtube-video">
     <div class="video-details">
-        <h1>@Quote</h1>
+        <h1 class = "quote">@Quote</h1>
+        <p class  = "date">@(EpisodeCollection?.QuoteOrigin?.Video?.ReleaseDate.ToString() ?? "no release date")</p>
+        <p class  = "date">@(SearchRelevance.ToString()??"")</p>
     </div>
     <iframe class ="video" width="560" height="315" src="@VideoUrl" frameborder="0"></iframe>
     
@@ -13,5 +17,10 @@
     [Parameter]
     public string? Quote { get; set; }
 
+    [Parameter]
+    public EpisodeCollection? EpisodeCollection { get; set; }
+
+    [Parameter]
+    public float? SearchRelevance { get; set; }
 }
 
