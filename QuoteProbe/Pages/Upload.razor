@@ -46,14 +46,16 @@
 			</div>
 			
 		}
-		<button @onclick="@(() => { 
-			int key = random.Next(); 
-			_inputs.Add(key, new Pair<int, string>(
-				(_inputs.Any()) ? _inputs.Last().Value.V1+1 : 1, "")
-			);
-		}
-		)">Add video</button>
-		<button @onclick="@(() => UploadAll(_inputs.Values.Select(v => v).ToList()))">Upload all</button>
+		<div style="text-align: center;">
+			<button @onclick="@(() => { 
+				int key = random.Next(); 
+				_inputs.Add(key, new Pair<int, string>(
+					(_inputs.Any()) ? _inputs.Last().Value.V1+1 : 1, "")
+				);
+			}
+			)">Add video</button>
+			<button @onclick="@(() => UploadAll(_inputs.Values.Select(v => v).ToList()))">Upload all</button>
+		</div>
 	</div>
 	<div class="jobList">
 		<table>
