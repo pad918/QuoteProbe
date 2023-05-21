@@ -2,10 +2,10 @@
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Memory;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using TrashSearch.Data;
+using QuoteProbe.Data;
 using Newtonsoft.Json;
 
-namespace TrashSearch.Services
+namespace QuoteProbe.Services
 {
     public class DatabaseService
     {
@@ -14,9 +14,11 @@ namespace TrashSearch.Services
         private QdrantVectorDbClient _client;
         public DatabaseService()
         {
-            string QdrantKey = Environment.GetEnvironmentVariable("QDRANT_API_KEY")!;
-            string Endpoint = "http://localhost:6333";//Environment.GetEnvironmentVariable("QDRANT_ENDPOINT")!;
-            var EmbeddingKey = System.Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? throw new Exception("No api key found!");
+            string QdrantKey = Environment.GetEnvironmentVariable("QDRANT_API_KEY") ?? "";
+            string Endpoint = Environment.GetEnvironmentVariable("QDRANT_ENDPOINT") ?? 
+                    throw new ("Environment variable QDRANT_ENDPOINT not set");
+            var EmbeddingKey = System.Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? 
+                    throw new ("Environment variable OPENAI_API_KEY not set");
 
             Console.WriteLine($"Using keys: \n\t{QdrantKey}\n\t{Endpoint}\n\t{EmbeddingKey}");
 
@@ -25,16 +27,6 @@ namespace TrashSearch.Services
             HTTPClient.DefaultRequestHeaders.Add("api-key", QdrantKey);
             _client = new QdrantVectorDbClient(Endpoint, 1536, 6333, HTTPClient);
             _memoyStore = new QdrantMemoryStore(_client);
-
-            /*
-			//Create a kernel
-			_kernel = new KernelBuilder().Configure(c =>
-			{
-				c.AddOpenAITextEmbeddingGenerationService("ada", "text-embedding-ada-002", EmbeddingKey);
-			})
-			.WithMemoryStorage(new VolatileMemoryStore())//(_memoyStore)
-			.Build();
-			*/
 
             _kernel = new KernelBuilder().Configure(c =>
             {

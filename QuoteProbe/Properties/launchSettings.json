@@ -8,7 +8,7 @@
     }
   },
   "profiles": {
-    "TrashSearch": {
+    "QuoteProbe": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,

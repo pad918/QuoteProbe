@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using TrashSearch.Data;
-using TrashSearch.Services;
+using QuoteProbe.Data;
+using QuoteProbe.Services;
 using Toolbelt.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);

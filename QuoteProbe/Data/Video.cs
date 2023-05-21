@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Text;
 
-namespace TrashSearch.Data
+namespace QuoteProbe.Data
 {
     public class Video : ISerializable
     {

@@ -1,6 +1,6 @@
-﻿using TrashSearch.Data;
+﻿using QuoteProbe.Data;
 
-namespace TrashSearch.Services
+namespace QuoteProbe.Services
 {
     public class FileTranscriberService
     {

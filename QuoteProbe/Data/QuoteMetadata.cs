@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace TrashSearch.Data
+namespace QuoteProbe.Data
 {
     public class QuoteMetadata : ISerializable
     {

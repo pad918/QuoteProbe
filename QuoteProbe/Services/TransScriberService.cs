@@ -2,12 +2,12 @@
 using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
-using TrashSearch.Data;
+using QuoteProbe.Data;
 using Whisper.net;
 using Whisper.net.Ggml;
 using Newtonsoft.Json;
 
-namespace TrashSearch.Services
+namespace QuoteProbe.Services
 {
     public class TransScriberService
     {

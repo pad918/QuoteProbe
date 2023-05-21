@@ -1,9 +1,9 @@
-﻿using TrashSearch.Data;
+﻿using QuoteProbe.Data;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
 using YoutubeDLSharp.Options;
 
-namespace TrashSearch.Services
+namespace QuoteProbe.Services
 {
     public class CaptionsDownloaderService
     {

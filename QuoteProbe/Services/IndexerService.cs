@@ -1,12 +1,12 @@
 ﻿using System.Linq.Expressions;
-using TrashSearch.Components;
-using TrashSearch.Data;
+using QuoteProbe.Components;
+using QuoteProbe.Data;
 using YoutubeExplode;
 using YoutubeDLSharp;
 using static System.Reflection.Metadata.BlobBuilder;
-using static TrashSearch.Services.IndexerService;
+using static QuoteProbe.Services.IndexerService;
 
-namespace TrashSearch.Services
+namespace QuoteProbe.Services
 {
     /*
         A singleton for indexing new videos. It is a singleton since only one type of indexing job
@@ -87,8 +87,8 @@ namespace TrashSearch.Services
         private FileTranscriberService transScriberService = new();
         private DatabaseService? _database;
 
-        public string mainCollectionName => "TrashTaste_1";
-        public string metadataCollectionName => "TrashTasteMetaData_1";
+        public string mainCollectionName => "Quotes";
+        public string metadataCollectionName => "VideoMetadata";
 
         public IndexerService()
         {

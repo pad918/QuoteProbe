@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Text.Json.Nodes;
 
-namespace TrashSearch.Data
+namespace QuoteProbe.Data
 {
     public class Transcription
     {

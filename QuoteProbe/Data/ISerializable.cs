@@ -1,4 +1,4 @@
-﻿namespace TrashSearch.Data
+﻿namespace QuoteProbe.Data
 {
     public interface ISerializable
     {
