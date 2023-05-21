@@ -30,3 +30,7 @@ To install and set up the QuoteProbe project locally, follow these steps:
     - The qdrant binding in semantic kernel has a lot of problems at the moment. Removing points and collections in the database does not work and throws an exception
     - Quotes have references to the w.rong video sometimes.
     - Bad error handlig causes a lot of problems when uploading new videos.
+
+## Images
+![Search for quotes](./search.png)
+![Upload videos](./upload.gif)
